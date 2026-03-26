@@ -13,7 +13,6 @@
 [dev-target=circle].is-active,
 [dev-target=one-sooner-accordion].is-open [dev-target=circle] {
   opacity: 1;
-  transform: scale(1.1);
 }
 [dev-target=one-sooner-accordion] [dev-target=sooner-body] {
   display: grid !important;
