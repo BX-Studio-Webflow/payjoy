@@ -1,1 +1,86 @@
-"use strict";(()=>{var s=Object.defineProperty;var d=(r,e,t)=>e in r?s(r,e,{enumerable:!0,configurable:!0,writable:!0,value:t}):r[e]=t;var n=(r,e,t)=>d(r,typeof e!="symbol"?e+"":e,t);var a=class{constructor(){n(this,"tabLinks",[]);n(this,"accordionItems",[])}init(){this.initTabNav(),this.initAccordionItems()}initTabNav(){let e=document.querySelectorAll('[dev-target="faq-tab"]');if(!e.length){console.error('No [dev-target="faq-tab"] elements found');return}e.forEach(t=>{this.tabLinks.push(t),t.addEventListener("click",o=>{o.preventDefault(),this.handleTabClick(t)})})}handleTabClick(e){let t=e.getAttribute("goto");if(!t)return;let o=document.getElementById(t);if(!o){console.error(`No element found with id="${t}"`);return}o.scrollIntoView({behavior:"smooth",block:"start"}),this.tabLinks.forEach(i=>i.classList.remove("is-active")),e.classList.add("is-active")}initAccordionItems(){let e=document.querySelectorAll('[dev-target="faq-item"]');if(!e.length){console.error('No [dev-target="faq-item"] elements found');return}e.forEach(t=>{this.accordionItems.push(t);let o=t.querySelector('[dev-target="faq-header"]');o&&o.addEventListener("click",()=>{this.toggleAccordion(t)})})}toggleAccordion(e){let t=e.classList.contains("is-open"),o=e.closest('[dev-target="faq-group"]');o&&o.querySelectorAll('[dev-target="faq-item"]').forEach(i=>{i.classList.remove("is-open")}),t||e.classList.add("is-open")}destroy(){this.tabLinks=[],this.accordionItems=[]}};window.Webflow||(window.Webflow=[]);window.Webflow.push(()=>{new a().init()});})();
+"use strict";
+(() => {
+  // bin/live-reload.js
+  new EventSource(`${"http://localhost:3000"}/esbuild`).addEventListener("change", () => location.reload());
+
+  // src/utils/faq-accordion.ts
+  var FaqAccordionController = class {
+    soonerItems = [];
+    init() {
+      this.initSoonerAccordionItems();
+    }
+    // ─── New 'sooner' process block behavior (mouse hover + mobile click) ───────
+    initSoonerAccordionItems() {
+      const items = document.querySelectorAll('[dev-target="one-sooner-accordion"]');
+      if (!items.length) return;
+      items.forEach((item) => {
+        this.soonerItems.push(item);
+        const header = item.querySelector('[dev-target="sooner-header"]');
+        const circle = item.querySelector('[dev-target="circle"]');
+        if (!header) return;
+        header.addEventListener("mouseenter", () => {
+          if (this.isHoverable() && !this.isTouchDevice()) {
+            this.openSoonerItem(item);
+          }
+        });
+        header.addEventListener("click", (event) => {
+          if (this.isTouchDevice()) {
+            event.preventDefault();
+            this.toggleSoonerItem(item);
+          }
+        });
+        if (circle) {
+          circle.addEventListener("click", (event) => {
+            if (this.isTouchDevice()) {
+              event.preventDefault();
+              event.stopPropagation();
+              this.toggleSoonerItem(item);
+            }
+          });
+        }
+      });
+      if (items.length > 0) {
+        this.openSoonerItem(items[0]);
+      }
+    }
+    toggleSoonerItem(item) {
+      if (item.classList.contains("is-open")) {
+        this.closeSoonerItem(item);
+      } else {
+        this.openSoonerItem(item);
+      }
+    }
+    openSoonerItem(item) {
+      this.soonerItems.forEach((sibling) => {
+        sibling.classList.remove("is-open");
+        const siblingCircle = sibling.querySelector('[dev-target="circle"]');
+        siblingCircle?.classList.remove("is-active");
+      });
+      item.classList.add("is-open");
+      const circle = item.querySelector('[dev-target="circle"]');
+      circle?.classList.add("is-active");
+    }
+    closeSoonerItem(item) {
+      item.classList.remove("is-open");
+      const circle = item.querySelector('[dev-target="circle"]');
+      circle?.classList.remove("is-active");
+    }
+    isTouchDevice() {
+      return "ontouchstart" in window || navigator.maxTouchPoints > 0 || window.matchMedia("(pointer: coarse)").matches;
+    }
+    isHoverable() {
+      return window.matchMedia("(hover: hover) and (pointer: fine)").matches;
+    }
+    destroy() {
+      this.soonerItems = [];
+    }
+  };
+
+  // src/index.ts
+  window.Webflow ||= [];
+  window.Webflow.push(() => {
+    const faqAccordionController = new FaqAccordionController();
+    faqAccordionController.init();
+  });
+})();
+//# sourceMappingURL=index.js.map

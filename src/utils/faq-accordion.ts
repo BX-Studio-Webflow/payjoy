@@ -1,100 +1,109 @@
 /**
  * FAQ accordion controller
  *
- * Attribute contract:
- *   [dev-target="faq-tab"]     — left-nav tab link, also carry a `goto` attr matching the section's dev-target
- *   [dev-target="faq-group"]   — wrapper for each accordion section
- *   [dev-target="faq-item"]    — single accordion row
- *   [dev-target="faq-header"]  — clickable header inside faq-item
- *   [dev-target="faq-body"]    — collapsible body inside faq-item
- *   [dev-target="faq-arrow"]   — arrow icon inside faq-header
+ * attribute contract:
+ *   [dev-target="one-sooner-accordion"] — wrapper for each step item
+ *   [dev-target="sooner-header"]       — hover/clickable step header
+ *   [dev-target="sooner-step-text"]   — step label
+ *   [dev-target="sooner-header-text"] — step title
+ *   [dev-target="circle"]            — active indicator circle
+ *   [dev-target="sooner-body"]        — collapsible body
  */
 
 export class FaqAccordionController {
-  private tabLinks: HTMLElement[] = [];
-  private accordionItems: HTMLElement[] = [];
+  private soonerItems: HTMLElement[] = [];
 
   init(): void {
-    this.initTabNav();
-    this.initAccordionItems();
+    this.initSoonerAccordionItems();
   }
 
-  // ─── Left-side tab navigation ───────────────────────────────────────────────
+  // ─── New 'sooner' process block behavior (mouse hover + mobile click) ───────
 
-  private initTabNav(): void {
-    const links = document.querySelectorAll<HTMLElement>('[dev-target="faq-tab"]');
+  private initSoonerAccordionItems(): void {
+    const items = document.querySelectorAll<HTMLElement>('[dev-target="one-sooner-accordion"]');
 
-    if (!links.length) {
-      console.error('No [dev-target="faq-tab"] elements found');
-      return;
-    }
-
-    links.forEach((link) => {
-      this.tabLinks.push(link);
-
-      link.addEventListener('click', (e) => {
-        e.preventDefault();
-        this.handleTabClick(link);
-      });
-    });
-  }
-
-  private handleTabClick(clickedLink: HTMLElement): void {
-    const targetId = clickedLink.getAttribute('goto');
-    if (!targetId) return;
-
-    const section = document.getElementById(targetId);
-
-    if (!section) {
-      console.error(`No element found with id="${targetId}"`);
-      return;
-    }
-
-    section.scrollIntoView({ behavior: 'smooth', block: 'start' });
-
-    this.tabLinks.forEach((l) => l.classList.remove('is-active'));
-    clickedLink.classList.add('is-active');
-  }
-
-  // ─── Accordion open / close ──────────────────────────────────────────────────
-
-  private initAccordionItems(): void {
-    const items = document.querySelectorAll<HTMLElement>('[dev-target="faq-item"]');
-
-    if (!items.length) {
-      console.error('No [dev-target="faq-item"] elements found');
-      return;
-    }
+    if (!items.length) return;
 
     items.forEach((item) => {
-      this.accordionItems.push(item);
+      this.soonerItems.push(item);
 
-      const header = item.querySelector<HTMLElement>('[dev-target="faq-header"]');
+      const header = item.querySelector<HTMLElement>('[dev-target="sooner-header"]');
+      const circle = item.querySelector<HTMLElement>('[dev-target="circle"]');
+
       if (!header) return;
 
-      header.addEventListener('click', () => {
-        this.toggleAccordion(item);
+      // Desktop: hover opens step
+      header.addEventListener('mouseenter', () => {
+        if (this.isHoverable() && !this.isTouchDevice()) {
+          this.openSoonerItem(item);
+        }
       });
+
+      // Mobile: click toggles step
+      header.addEventListener('click', (event) => {
+        if (this.isTouchDevice()) {
+          event.preventDefault();
+          this.toggleSoonerItem(item);
+        }
+      });
+
+      // Mobile circle click also toggles step and adds `.is-active`
+      if (circle) {
+        circle.addEventListener('click', (event) => {
+          if (this.isTouchDevice()) {
+            event.preventDefault();
+            event.stopPropagation();
+            this.toggleSoonerItem(item);
+          }
+        });
+      }
     });
+
+    // Make first item active by default
+    if (items.length > 0) {
+      this.openSoonerItem(items[0]);
+    }
   }
 
-  private toggleAccordion(item: HTMLElement): void {
-    const isOpen = item.classList.contains('is-open');
-
-    const group = item.closest<HTMLElement>('[dev-target="faq-group"]');
-    if (group) {
-      group.querySelectorAll<HTMLElement>('[dev-target="faq-item"]').forEach((sibling) => {
-        sibling.classList.remove('is-open');
-      });
+  private toggleSoonerItem(item: HTMLElement): void {
+    if (item.classList.contains('is-open')) {
+      this.closeSoonerItem(item);
+    } else {
+      this.openSoonerItem(item);
     }
+  }
 
-    if (!isOpen) {
-      item.classList.add('is-open');
-    }
+  private openSoonerItem(item: HTMLElement): void {
+    this.soonerItems.forEach((sibling) => {
+      sibling.classList.remove('is-open');
+      const siblingCircle = sibling.querySelector<HTMLElement>('[dev-target="circle"]');
+      siblingCircle?.classList.remove('is-active');
+    });
+
+    item.classList.add('is-open');
+    const circle = item.querySelector<HTMLElement>('[dev-target="circle"]');
+    circle?.classList.add('is-active');
+  }
+
+  private closeSoonerItem(item: HTMLElement): void {
+    item.classList.remove('is-open');
+    const circle = item.querySelector<HTMLElement>('[dev-target="circle"]');
+    circle?.classList.remove('is-active');
+  }
+
+  private isTouchDevice(): boolean {
+    return (
+      'ontouchstart' in window ||
+      navigator.maxTouchPoints > 0 ||
+      window.matchMedia('(pointer: coarse)').matches
+    );
+  }
+
+  private isHoverable(): boolean {
+    return window.matchMedia('(hover: hover) and (pointer: fine)').matches;
   }
 
   destroy(): void {
-    this.tabLinks = [];
-    this.accordionItems = [];
+    this.soonerItems = [];
   }
 }

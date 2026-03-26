@@ -1,40 +1,31 @@
 /* ─────────────────────────────────────────────────────────────────────────────
-   TAB NAVIGATION
+   SOONER PROCESS BLOCK
 ───────────────────────────────────────────────────────────────────────────── */
 
-[dev-target="faq-tab"] {
-  cursor: pointer;
+[dev-target='one-sooner-accordion'] {
+  display: grid;
+  row-gap: 0.5rem;
 }
 
-/* ACTIVE */
-[dev-target="faq-tab"].is-active {
-  opacity: 1;
-  pointer-events: none; /* already here, no need to re-click */
-}
-
-/* ─────────────────────────────────────────────────────────────────────────────
-   ACCORDION ITEM — shared
-───────────────────────────────────────────────────────────────────────────── */
-
-[dev-target="faq-item"] {
-  row-gap: 0 !important;
-  column-gap: 0 !important;
-}
-
-[dev-target="faq-header"] {
+[dev-target='sooner-header'] {
   cursor: pointer;
   user-select: none;
 }
 
-/* ─────────────────────────────────────────────────────────────────────────────
-   ACCORDION ITEM — CLOSED (default)
-───────────────────────────────────────────────────────────────────────────── */
-
-[dev-target="faq-item"]:not(.is-open) [dev-target="faq-arrow"] {
-  transform: rotate(0deg);
+[dev-target='circle'] {
+  transition:
+    transform 0.2s ease,
+    opacity 0.2s ease;
+  /*opacity: 0.5;*/
 }
 
-[dev-target="faq-item"]:not(.is-open) [dev-target="faq-body"] {
+[dev-target='circle'].is-active,
+[dev-target='one-sooner-accordion'].is-open [dev-target='circle'] {
+  opacity: 1;
+  transform: scale(1.1);
+}
+
+[dev-target='one-sooner-accordion'] [dev-target='sooner-body'] {
   display: grid !important;
   grid-template-rows: 0fr;
   overflow: hidden;
@@ -44,34 +35,16 @@
     padding-bottom 0.35s ease;
 }
 
-/* ─────────────────────────────────────────────────────────────────────────────
-   ACCORDION ITEM — OPEN
-───────────────────────────────────────────────────────────────────────────── */
-
-[dev-target="faq-item"].is-open [dev-target="faq-arrow"] {
-  transform: rotate(180deg);
-  transition: transform 0.3s ease;
-}
-
-[dev-target="faq-item"].is-open [dev-target="faq-body"] {
-  display: grid !important;
+[dev-target='one-sooner-accordion'].is-open [dev-target='sooner-body'] {
   grid-template-rows: 1fr;
-  overflow: hidden;
   padding-bottom: 1rem;
-  transition:
-    grid-template-rows 0.35s ease,
-    padding-bottom 0.35s ease;
 }
 
-/* ─────────────────────────────────────────────────────────────────────────────
-   BODY INNER — required for grid-template-rows trick
-───────────────────────────────────────────────────────────────────────────── */
-
-[dev-target="faq-body"] > * {
+[dev-target='one-sooner-accordion'] [dev-target='sooner-body'] > * {
   overflow: hidden;
   min-height: 0;
 }
 
-[dev-target="faq-item"].is-open [dev-target="faq-body"] > * {
+[dev-target='one-sooner-accordion'].is-open [dev-target='sooner-body'] > * {
   padding-top: 15px;
 }
