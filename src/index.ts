@@ -1,8 +1,7 @@
-import './styles/accordion-animations.css';
+import { CareersController } from '$utils/careers';
 
-import { FaqAccordionController } from '$utils/faq-accordion';
 window.Webflow ||= [];
 window.Webflow.push(() => {
-  const faqAccordionController = new FaqAccordionController();
-  faqAccordionController.init();
+  const careersController = new CareersController();
+  void careersController.init();
 });
