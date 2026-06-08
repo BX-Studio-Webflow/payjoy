@@ -4,11 +4,21 @@ A Webflow careers listing that fetches open roles from the [Lever API](https://h
 
 ## CDN
 
+**Careers**
+
 ```html
-<script defer src="https://cdn.jsdelivr.net/gh/BX-Studio-Webflow/payjoy@9ddfd3c/dist/index.js"></script>
+<script defer src="https://cdn.jsdelivr.net/gh/BX-Studio-Webflow/payjoy@9ddfd3c/dist/careers.js"></script>
 ```
 
-Direct link: https://cdn.jsdelivr.net/gh/BX-Studio-Webflow/payjoy@9ddfd3c/dist/index.js
+Direct link: https://cdn.jsdelivr.net/gh/BX-Studio-Webflow/payjoy@9ddfd3c/dist/careers.js
+
+**Map**
+
+```html
+<script defer src="https://cdn.jsdelivr.net/gh/BX-Studio-Webflow/payjoy@9ddfd3c/dist/map.js"></script>
+```
+
+Direct link: https://cdn.jsdelivr.net/gh/BX-Studio-Webflow/payjoy@9ddfd3c/dist/map.js
 
 Replace `9ddfd3c` with the latest commit SHA after each release.
 
@@ -125,13 +135,13 @@ Selecting an option filters immediately. Choosing the placeholder option (e.g. `
 1. **Add the script to your Webflow careers page:**
 
 ```html
-<script defer src="https://cdn.jsdelivr.net/gh/BX-Studio-Webflow/payjoy@9ddfd3c/dist/index.js"></script>
+<script defer src="https://cdn.jsdelivr.net/gh/BX-Studio-Webflow/payjoy@9ddfd3c/dist/careers.js"></script>
 ```
 
 For local development:
 
 ```html
-<script defer src="http://localhost:3000/index.js"></script>
+<script defer src="http://localhost:3000/careers.js"></script>
 ```
 
 2. **Add the HTML structure** shown above with your Webflow styles.
@@ -229,5 +239,5 @@ When you run `pnpm dev`:
 4. **Update the Webflow script tag** with the new commit SHA:
 
    ```html
-   <script defer src="https://cdn.jsdelivr.net/gh/BX-Studio-Webflow/payjoy@COMMIT_SHA/dist/index.js"></script>
+   <script defer src="https://cdn.jsdelivr.net/gh/BX-Studio-Webflow/payjoy@COMMIT_SHA/dist/careers.js"></script>
    ```
