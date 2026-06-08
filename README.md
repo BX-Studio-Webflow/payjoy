@@ -1,362 +1,233 @@
-# Blog Accordion Component
+# PayJoy Careers
 
-An interactive accordion component for blog cards that automatically cycles through items with smooth animations. Features SVG icon state transitions (active/inactive) and hover-based manual control.
+A Webflow careers listing that fetches open roles from the [Lever API](https://hire.lever.co/), renders them grouped by department, and supports live filtering by department, location, and job title.
+
+## CDN
+
+```html
+<script defer src="https://cdn.jsdelivr.net/gh/BX-Studio-Webflow/payjoy@9ddfd3c/dist/index.js"></script>
+```
+
+Direct link: https://cdn.jsdelivr.net/gh/BX-Studio-Webflow/payjoy@9ddfd3c/dist/index.js
+
+Replace `9ddfd3c` with the latest commit SHA after each release.
 
 ## Reference
 
-- [Using the Accordion](#using-the-accordion)
+- [CDN](#cdn)
+- [Using the Careers Listing](#using-the-careers-listing)
   - [HTML Structure](#html-structure)
-  - [Required Attributes](#required-attributes)
+  - [Required Elements](#required-elements)
+  - [Filter Dropdowns](#filter-dropdowns)
   - [Integration](#integration)
-  - [Customization](#customization)
+  - [How Filtering Works](#how-filtering-works)
 - [Included tools](#included-tools)
 - [Requirements](#requirements)
 - [Getting started](#getting-started)
   - [Installing](#installing)
   - [Building](#building)
-    - [Serving files on development mode](#serving-files-on-development-mode)
-    - [Building multiple files](#building-multiple-files)
-    - [Setting up a path alias](#setting-up-a-path-alias)
-- [Contributing guide](#contributing-guide)
+  - [Serving files on development mode](#serving-files-on-development-mode)
 - [Pre-defined scripts](#pre-defined-scripts)
-- [CI/CD](#cicd)
-  - [Continuous Integration](#continuous-integration)
-  - [Continuous Deployment](#continuous-deployment)
-  - [How to automatically deploy updates to npm](#how-to-automatically-deploy-updates-to-npm)
+- [Release Process](#release-process)
 
-## Using the Accordion
+## Using the Careers Listing
 
-The blog accordion component automatically cycles through accordion items every 10 seconds. Each item features:
+On page load, the script:
 
-- Dynamic SVG icon state transitions (blue for active, gray for inactive)
-- Hover interaction to manually select items
-- Automatic cycling that restarts after manual selection
-- Smooth animations and state management
+1. Fetches jobs from `https://api.lever.co/v0/postings/payjoy?mode=json&group=department`
+2. Clones Webflow templates to render department groups and job rows
+3. Populates three filter dropdowns from the API data
+4. Applies filters instantly when a dropdown option is selected
+
+The script exits quietly on pages without a `.careers-list` container, so it is safe to include site-wide.
 
 ### HTML Structure
 
-Each accordion item requires the following structure:
+The page needs one results container, two templates, and three Webflow dropdowns.
 
 ```html
-<div dev-target="accordion" class="blog-accordion_card">
-  <div dev-target="accordion-svg" class="blog-accordion_logo w-embed">
-    <svg xmlns="http://www.w3.org/2000/svg" width="34" height="34" viewBox="0 0 34 34" fill="none">
-      <circle cx="4.08" cy="4.08" r="4.08" fill="#3467E5"></circle>
-      <circle cx="16.9999" cy="4.08" r="4.08" fill="#3467E5"></circle>
-      <circle cx="29.9203" cy="4.08" r="4.08" fill="#3467E5"></circle>
-      <circle cx="4.08" cy="16.9999" r="4.08" fill="#3467E5"></circle>
-      <circle cx="16.9999" cy="16.9999" r="4.08" fill="#3467E5"></circle>
-      <circle cx="29.9203" cy="16.9999" r="4.08" fill="#3467E5"></circle>
-      <circle cx="4.08" cy="29.9198" r="4.08" fill="#3467E5"></circle>
-      <circle cx="16.9999" cy="29.9198" r="4.08" fill="#3467E5"></circle>
-      <circle cx="29.9203" cy="29.9198" r="4.08" fill="#3467E5"></circle>
-    </svg>
+<!-- Filter bar (3 Webflow dropdowns in this order) -->
+<div class="dropdown w-dropdown"><!-- Region / department --></div>
+<div class="dropdown w-dropdown"><!-- Location --></div>
+<div class="dropdown w-dropdown"><!-- Job title --></div>
+
+<!-- Optional search button -->
+<div class="button-main-wrap">
+  <div class="clickable_btn">Search</div>
+</div>
+
+<!-- Results container -->
+<div class="careers-list"></div>
+
+<!-- Department group template (removed from DOM on init, used as clone source) -->
+<div dev-target="department-group">
+  <div class="career_dept_name">
+    <h1 class="u-heading">Department Name</h1>
   </div>
-  <div class="blog-accordion-body">
-    <div class="blog-accordion-header">
-      <div dev-target="accordion-title" class="blog-accordion-title">Technical Excellence</div>
-      <div dev-target="accordion-arrow" class="blog-accordion_arrow w-embed">
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          width="20"
-          height="11"
-          viewBox="0 0 20 11"
-          fill="none"
-        >
-          <path d="M0.353516 0.353516L9.85352 9.85352L19.3535 0.353516" stroke="#020C2E"></path>
-        </svg>
-      </div>
-    </div>
-    <div dev-target="accordion-message" class="blog-accordion-text">
-      Hand off a Figma design and we'll build it on Webflow via a white-glove process.
-    </div>
+  <div dev-target="career-list">
+    <!-- Job rows are injected here -->
+  </div>
+</div>
+
+<!-- Job row template (removed from DOM on init, used as clone source) -->
+<div dev-target="career-item">
+  <div class="career_role">
+    <div class="u-text">Role Title</div>
+  </div>
+  <div class="career_city">
+    <div class="u-text">City</div>
+  </div>
+  <div class="clickable_btn">
+    <div class="button-main-text">Learn More</div>
   </div>
 </div>
 ```
 
-### Required Attributes
+### Required Elements
 
-All accordion items **must** include these `dev-target` attributes:
+| Selector / attribute | Purpose |
+| --- | --- |
+| `.careers-list` | Container where department groups are rendered |
+| `[dev-target="department-group"]` | Template for each department section |
+| `[dev-target="career-list"]` | Container inside a department for job rows |
+| `[dev-target="career-item"]` | Template for a single job posting |
+| `.dropdown.w-dropdown` (×3) | Filter dropdowns, in order: department, location, title |
+| `.button-main-wrap .clickable_btn` | Optional search button (re-applies current filters) |
 
-- `dev-target="accordion"` - Main accordion card container
-- `dev-target="accordion-svg"` - SVG icon container (circles will transition between #3467E5 for active and #E7E7E7 for inactive)
-- `dev-target="accordion-title"` - Accordion title element
-- `dev-target="accordion-message"` - Accordion content/description text
+Inside each rendered job row, the script updates:
 
-The component will automatically:
+- **Role title** — `.career_role .u-text`
+- **Location(s)** — `.career_city .u-text` (uses `allLocations` when available)
+- **Learn More** — `.clickable_btn` opens the Lever posting in a new tab
 
-- Change SVG circle colors based on active state
-- Add/remove the `is-active` class on the accordion container
-- Cycle through items every 10 seconds
-- Reset cycling when a user hovers over an item
+If `[dev-target="department-group"]` or `[dev-target="career-item"]` is missing, the script logs an error and stops.
 
-⚠️ **Important:** The accordion will fail gracefully and log errors if any required attributes are missing.
+### Filter Dropdowns
+
+The three `.dropdown.w-dropdown` elements are matched by index:
+
+| Index | Placeholder label | Filters by |
+| --- | --- | --- |
+| 0 | `Region: All` | Department group title (e.g. Finance, Operations) |
+| 1 | `Location` | Primary location or any value in `allLocations` |
+| 2 | `Job title` | Role name (`posting.text`) |
+
+Each dropdown must contain:
+
+- `.w-dropdown-list` — option list (rebuilt from API data)
+- `.w-dropdown-toggle` — stores the selected value
+- `.fitler-dropdown-text-wrapper .text-size-regular` — visible label
+
+Selecting an option filters immediately. Choosing the placeholder option (e.g. `Region: All`) clears that filter.
 
 ### Integration
 
-1. **Add the script to your Webflow page:**
+1. **Add the script to your Webflow careers page:**
 
 ```html
-<script src="https://cdn.jsdelivr.net/gh/YOUR-USERNAME/bx-blog-accordion@v0.0.1/dist/index.js"></script>
+<script defer src="https://cdn.jsdelivr.net/gh/BX-Studio-Webflow/payjoy@9ddfd3c/dist/index.js"></script>
 ```
 
-2. **Add multiple accordion items** with the structure shown above
+For local development:
 
-3. **The accordion will automatically:**
-   - Activate the first accordion on page load
-   - Change SVG icon colors (blue #3467E5 for active, gray #E7E7E7 for inactive)
-   - Automatically cycle to the next accordion every 10 seconds
-   - Allow manual selection via hover (cycling restarts after hover)
-   - Loop back to the first accordion after the last one
-
-### Customization
-
-**Timing:**
-To change the accordion cycle duration, modify `TAB_DURATION` in `src/utils/accordion-animation.ts`:
-
-```typescript
-private readonly TAB_DURATION = 10000; // milliseconds (10 seconds)
+```html
+<script defer src="http://localhost:3000/index.js"></script>
 ```
 
-**SVG Colors:**
-The component automatically transitions SVG circle colors:
+2. **Add the HTML structure** shown above with your Webflow styles.
 
-- **Active state:** `#3467E5` (blue)
-- **Inactive state:** `#E7E7E7` (gray)
+3. **Publish.** On load, all roles appear grouped by department. Filters update the list without a page reload.
 
-To customize these colors, update the color values in the `activateAccordion` method in `src/utils/accordion-animation.ts`.
+### How Filtering Works
 
-**Styling:**
-Customize the appearance by updating your Webflow styles or add custom CSS:
+Jobs are fetched once on init and cached in memory. All filtering happens client-side:
 
-- `.blog-accordion_card` - Accordion card container
-- `.blog-accordion_card.is-active` - Active accordion state
-- `.blog-accordion-title` - Title styling
-- `.blog-accordion-text` - Message text styling
+- **Department** — shows only the matching department group
+- **Location** — keeps postings where the selected city matches `categories.location` or appears in `categories.allLocations`
+- **Job title** — keeps postings whose role name matches exactly
 
-**Manual Control:**
-Access the accordion controller to manually control behavior:
+Filters can be combined. For example, selecting **Finance** and **New York City, NY** shows only finance roles available in that location.
 
-```javascript
-// Stop auto-cycling
-accordionController.stop();
-
-// Go to specific accordion (0-indexed)
-accordionController.goToAccordion(2);
-
-// Destroy the accordion
-accordionController.destroy();
-```
+When no roles match, the list shows `No roles found.`
 
 ## Included tools
 
-This template contains some preconfigured development tools:
-
-- [Typescript](https://www.typescriptlang.org/): A superset of Javascript that adds an additional layer of Typings, bringing more security and efficiency to the written code.
-- [Prettier](https://prettier.io/): Code formatting that assures consistency across all Finsweet's projects.
-- [ESLint](https://eslint.org/): Code linting that enforces industries' best practices. It uses [our own custom configuration](https://github.com/finsweet/eslint-config) to maintain consistency across all Finsweet's projects.
-- [Playwright](https://playwright.dev/): Fast and reliable end-to-end testing.
-- [esbuild](https://esbuild.github.io/): Javascript bundler that compiles, bundles and minifies the original Typescript files.
-- [Changesets](https://github.com/changesets/changesets): A way to manage your versioning and changelogs.
-- [Finsweet's TypeScript Utils](https://github.com/finsweet/ts-utils): Some utilities to help you in your Webflow development.
+- [Typescript](https://www.typescriptlang.org/)
+- [Prettier](https://prettier.io/)
+- [ESLint](https://eslint.org/) with [Finsweet's config](https://github.com/finsweet/eslint-config)
+- [Playwright](https://playwright.dev/)
+- [esbuild](https://esbuild.github.io/)
+- [Changesets](https://github.com/changesets/changesets)
+- [Finsweet's TypeScript Utils](https://github.com/finsweet/ts-utils)
 
 ## Requirements
 
-This template requires the use of [pnpm](https://pnpm.js.org/en/). You can [install pnpm](https://pnpm.io/installation) with:
+This project uses [pnpm](https://pnpm.io/installation):
 
 ```bash
 npm i -g pnpm
 ```
 
-To enable automatic deployments to npm, please read the [Continuous Deployment](#continuous-deployment) section.
-
 ## Getting started
 
-The quickest way to start developing a new project is by [creating a new repository from this template](https://docs.github.com/en/github/creating-cloning-and-archiving-repositories/creating-a-repository-from-a-template#creating-a-repository-from-a-template).
-
-Once the new repository has been created, update the `package.json` file with the correct information, specially the name of the package which has to be unique.
-
 ### Installing
-
-After creating the new repository, open it in your terminal and install the packages by running:
 
 ```bash
 pnpm install
 ```
 
-If this is the first time using Playwright and you want to use it in this project, you'll also have to install the browsers by running:
+Optional, for Playwright tests:
 
 ```bash
 pnpm playwright install
 ```
 
-You can read more about the use of Playwright in the [Testing](#testing) section.
-
-It is also recommended that you install the following extensions in your VSCode editor:
-
-- [Prettier - Code formatter](https://marketplace.visualstudio.com/items?itemName=esbenp.prettier-vscode)
-- [ESLint](https://marketplace.visualstudio.com/items?itemName=dbaeumer.vscode-eslint)
-
 ### Building
 
-To build the files, you have two defined scripts:
-
-- `pnpm dev`: Builds and creates a local server that serves all files (check [Serving files on development mode](#serving-files-on-development-mode) for more info).
-- `pnpm build`: Builds to the production directory (`dist`).
+- `pnpm dev` — watch mode + local server at `http://localhost:3000`
+- `pnpm build` — production output in `dist/`
 
 ### Serving files on development mode
 
-When you run `pnpm dev`, two things happen:
+When you run `pnpm dev`:
 
-- esbuild is set to `watch` mode. Every time that you save your files, the project will be rebuilt.
-- A local server is created under `http://localhost:3000` that serves all your project files. You can import them in your Webflow projects like:
-
-```html
-<script defer src="http://localhost:3000/{FILE_PATH}.js"></script>
-```
-
-- Live Reloading is enabled by default, meaning that every time you save a change in your files, the website you're working on will reload automatically. You can disable it in `/bin/build.js`.
-
-### Building multiple files
-
-If you need to build multiple files into different outputs, you can do it by updating the build settings.
-
-In `bin/build.js`, update the `ENTRY_POINTS` array with any files you'd like to build:
-
-```javascript
-const ENTRY_POINTS = [
-  'src/home/index.ts',
-  'src/contact/whatever.ts',
-  'src/hooyah.ts',
-  'src/home/other.ts',
-];
-```
-
-This will tell `esbuild` to build all those files and output them in the `dist` folder for production and in `http://localhost:3000` for development.
-
-### Building CSS files
-
-CSS files are also supported by the bundler. When including a CSS file as an entry point, the compiler will generate a minified version in your output folder.
-
-You can define a CSS entry point by either:
-
-- Manually defining it in the `bin/build.js` config. [See previous section](#building-multiple-files) for reference.
-- Or importing the file inside any of your JavaScript / TypeScript files:
-
-```typescript
-// src/index.ts
-import './index.css';
-```
-
-CSS outputs are also available in `localhost` during [development mode](#serving-files-on-development-mode).
-
-### Setting up a path alias
-
-Path aliases are very helpful to avoid code like:
-
-```typescript
-import example from '../../../../utils/example';
-```
-
-Instead, we can create path aliases that map to a specific folder, so the code becomes cleaner like:
-
-```typescript
-import example from '$utils/example';
-```
-
-You can set up path aliases using the `paths` setting in `tsconfig.json`. This template has an already predefined path as an example:
-
-```json
-{
-  "paths": {
-    "$utils/*": ["src/utils/*"]
-  }
-}
-```
-
-To avoid any surprises, take some time to familiarize yourself with the [tsconfig](/tsconfig.json) enabled flags.
-
-## Testing
-
-As previously mentioned, this library has [Playwright](https://playwright.dev/) included as an automated testing tool.
-
-All tests are located under the `/tests` folder. This template includes a test spec example that will help you catch up with Playwright.
-
-After [installing the dependencies](#installing), you can try it out by running `pnpm test`.
-Make sure you replace it with your own tests! Writing proper tests will help improve the maintainability and scalability of your project in the long term.
-
-By default, Playwright will also run `pnpm dev` in the background while the tests are running, so [your files served](#serving-files-on-development-mode) under `localhost:3000` will run as usual.
-You can disable this behavior in the `playwright.config.ts` file.
-
-If you project doesn't require any testing, you should disable the Tests job in the [CI workflow](#continuous-integration) by commenting it out in the `.github/workflows/ci.yml` file.
-This will prevent the tests from running when you open a Pull Request.
-
-## Contributing guide
-
-In general, your development workflow should look like this:
-
-1. Create a new branch where to develop a new feature or bug fix.
-2. Once you've finished the implementation, [create a Changeset](#continuous-deployment) (or multiple) explaining the changes that you've made in the codebase.
-3. Open a Pull Request and wait until the [CI workflows](#continuous-integration) finish. If something fails, please try to fix it before merging the PR.
-   If you don't want to wait for the CI workflows to run on GitHub to know if something fails, it will be always faster to run them in your machine before opening a PR.
-4. Merge the Pull Request. The Changesets bot will automatically open a new PR with updates to the `CHANGELOG.md`, you should also merge that one. If you have [automatic npm deployments](#how-to-automatically-deploy-updates-to-npm) enabled, Changesets will also publish this new version on npm.
-
-If you need to work on several features before publishing a new version on npm, it is a good practise to create a `development` branch where to merge all the PR's before pushing your code to master.
+- esbuild rebuilds on save
+- Files are served at `http://localhost:3000`
+- Live reload is enabled by default (configurable in `bin/build.js`)
 
 ## Pre-defined scripts
 
-This template contains a set of predefined scripts in the `package.json` file:
-
-- `pnpm dev`: Builds and creates a local server that serves all files (check [Serving files on development mode](#serving-files-on-development-mode) for more info).
-- `pnpm build`: Builds to the production directory (`dist`).
-- `pnpm lint`: Scans the codebase with ESLint and Prettier to see if there are any errors.
-- `pnpm lint:fix`: Fixes all auto-fixable issues in ESLint.
-- `pnpm check`: Checks for TypeScript errors in the codebase.
-- `pnpm format`: Formats all the files in the codebase using Prettier. You probably won't need this script if you have automatic [formatting on save](https://www.digitalocean.com/community/tutorials/code-formatting-with-prettier-in-visual-studio-code#automatically-format-on-save) active in your editor.
-- `pnpm test`: Will run all the tests that are located in the `/tests` folder.
-- `pnpm test:headed`: Will run all the tests that are located in the `/tests` folder visually in headed browsers.
-- `pnpm release`: This command is defined for [Changesets](https://github.com/changesets/changesets). You don't have to interact with it.
-- `pnpm run update`: Scans the dependencies of the project and provides an interactive UI to select the ones that you want to update.
+- `pnpm dev` — development build + local server
+- `pnpm build` — production build
+- `pnpm lint` — ESLint + Prettier check
+- `pnpm lint:fix` — auto-fix lint issues
+- `pnpm check` — TypeScript type check
+- `pnpm format` — format with Prettier
+- `pnpm test` — run Playwright tests
 
 ## Release Process
 
-To create and publish a new version:
-
-1. **Create a changeset** - Document your changes
+1. **Create a changeset**
 
    ```bash
    pnpm changeset
    ```
 
-   This opens an interactive prompt where you'll:
-
-   - Select the version bump type (patch/minor/major)
-   - Write a summary of your changes
-   - A changeset file will be created in `.changeset/`
-
-2. **Update version** - Apply the changeset to bump version numbers
+2. **Apply version bump**
 
    ```bash
    pnpm changeset version
    ```
 
-   This will:
-
-   - Update the version in `package.json`
-   - Update the `CHANGELOG.md` file
-   - Delete the changeset file
-
-3. **Create and push a git tag** - Tag the release and push to remote
+3. **Tag and push**
 
    ```bash
-   git tag v0.0.1
-   git push origin v0.0.1
+   git tag v0.0.2
+   git push origin v0.0.2
    ```
 
-   Replace `v0.0.1` with your new version number
+4. **Update the Webflow script tag** with the new commit SHA:
 
-4. **Update Webflow script tag** - Use the new version in your Webflow project
    ```html
-   <script src="https://cdn.jsdelivr.net/gh/YOUR-USERNAME/bx-blog-accordion@v0.0.1/dist/index.js"></script>
+   <script defer src="https://cdn.jsdelivr.net/gh/BX-Studio-Webflow/payjoy@COMMIT_SHA/dist/index.js"></script>
    ```
-   Update the version number in the `@v0.0.1` part of the URL to match your release
