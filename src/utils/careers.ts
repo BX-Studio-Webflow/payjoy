@@ -32,6 +32,7 @@ interface LeverDepartment {
 
 export class CareersController {
   private readonly apiUrl = new URL(API_ENDPOINT);
+  private allJobsData: LeverDepartment[] = [];
   private resultListWrapper: HTMLElement | null = null;
   private departmentTemplate: HTMLElement | null = null;
   private careerItemTemplate: HTMLElement | null = null;
@@ -71,6 +72,7 @@ export class CareersController {
     let jobsData: LeverDepartment[];
     try {
       jobsData = await this.fetchData(this.apiUrl);
+      this.allJobsData = jobsData;
     } catch (error) {
       console.error('Error fetching jobs:', error);
       return;
@@ -80,41 +82,39 @@ export class CareersController {
     this.populateDropdown(this.locationDropdown, jobsData, 'location', 'Location');
     this.populateDropdown(this.titleDropdown, jobsData, 'title', 'Job title');
 
-    this.renderJobs(jobsData);
+    this.applyFilters();
 
     const searchBtn = document.querySelector('.button-main-wrap .clickable_btn');
-    searchBtn?.addEventListener('click', () => void this.applyFilters());
+    searchBtn?.addEventListener('click', () => this.applyFilters());
   }
 
-  private async applyFilters(): Promise<void> {
+  private applyFilters(): void {
+    const filtered = this.filterJobs(this.allJobsData);
+    this.renderJobs(filtered);
+  }
+
+  private filterJobs(data: LeverDepartment[]): LeverDepartment[] {
     const selectedDept = this.getSelectedValue(this.deptDropdown);
     const selectedLocation = this.getSelectedValue(this.locationDropdown);
     const selectedTitle = this.getSelectedValue(this.titleDropdown);
 
-    if (selectedDept) this.apiUrl.searchParams.set('department', selectedDept);
-    else this.apiUrl.searchParams.delete('department');
-
-    if (selectedLocation) this.apiUrl.searchParams.set('location', selectedLocation);
-    else this.apiUrl.searchParams.delete('location');
-
-    try {
-      let data = await this.fetchData(this.apiUrl);
-
-      if (selectedTitle) data = this.filterByTitle(data, selectedTitle);
-
-      this.renderJobs(data);
-    } catch (error) {
-      console.error('Error fetching filtered jobs:', error);
-    }
-  }
-
-  private filterByTitle(data: LeverDepartment[], title: string): LeverDepartment[] {
     return data
+      .filter((department) => !selectedDept || department.title === selectedDept)
       .map((department) => ({
         ...department,
-        postings: department.postings.filter((posting) => posting.categories.title === title),
+        postings: department.postings.filter((posting) => {
+          if (selectedLocation && !this.matchesLocation(posting, selectedLocation)) return false;
+          if (selectedTitle && posting.text !== selectedTitle) return false;
+          return true;
+        }),
       }))
       .filter((department) => department.postings.length > 0);
+  }
+
+  private matchesLocation(posting: LeverPosting, location: string): boolean {
+    const { location: primaryLocation, allLocations } = posting.categories;
+
+    return primaryLocation === location || (allLocations?.includes(location) ?? false);
   }
 
   private async fetchData(url: URL): Promise<LeverDepartment[]> {
@@ -194,8 +194,20 @@ export class CareersController {
 
     const values = new Set<string>();
     jobsData.forEach((dept) => {
-      dept.postings.forEach(({ categories }) => {
-        const val = categories[category];
+      dept.postings.forEach((posting) => {
+        if (category === 'title') {
+          values.add(posting.text);
+          return;
+        }
+
+        if (category === 'location') {
+          const { location, allLocations } = posting.categories;
+          if (location) values.add(location);
+          allLocations?.forEach((loc) => values.add(loc));
+          return;
+        }
+
+        const val = posting.categories[category];
         if (typeof val === 'string') values.add(val);
       });
     });
@@ -209,7 +221,7 @@ export class CareersController {
     resetLink.addEventListener('click', (e) => {
       e.preventDefault();
       this.setDropdownLabel(dropdownEl, placeholder);
-      void this.applyFilters();
+      this.applyFilters();
     });
     nav.appendChild(resetLink);
 
@@ -223,7 +235,7 @@ export class CareersController {
         link.addEventListener('click', (e) => {
           e.preventDefault();
           this.setDropdownLabel(dropdownEl, val);
-          void this.applyFilters();
+          this.applyFilters();
         });
         nav.appendChild(link);
       });
@@ -235,13 +247,16 @@ export class CareersController {
 
     const toggle = dropdownEl.querySelector('.w-dropdown-toggle');
     if (toggle instanceof HTMLElement) toggle.dataset.selected = label;
+    if (dropdownEl instanceof HTMLElement) dropdownEl.dataset.selected = label;
   }
 
   private getSelectedValue(dropdownEl: Element | null): string | null {
     if (!(dropdownEl instanceof HTMLElement)) return null;
 
     const toggle = dropdownEl.querySelector('.w-dropdown-toggle');
-    const val = toggle instanceof HTMLElement ? toggle.dataset.selected : undefined;
+    const val =
+      (toggle instanceof HTMLElement ? toggle.dataset.selected : undefined) ??
+      dropdownEl.dataset.selected;
     const placeholder = dropdownEl.dataset.filterPlaceholder;
 
     return val && val !== placeholder ? val : null;
