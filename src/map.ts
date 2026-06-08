@@ -1,4 +1,7 @@
+import { MapController } from '$utils/map';
+
 window.Webflow ||= [];
 window.Webflow.push(() => {
-  // Map initialization
+  const mapController = new MapController();
+  mapController.init();
 });
