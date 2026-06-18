@@ -64,7 +64,7 @@ export class MapController {
     this.resultList = document.querySelector('[dev-target="result-list-wrap"]');
     this.prevBtn = document.querySelector('[dev-target="prev"] .clickable_btn');
     this.nextBtn = document.querySelector('[dev-target="next"] .clickable_btn');
-    this.resultsText = document.querySelector('.map_results .u-text');
+    this.resultsText = document.querySelector('[dev-target="results-text"]');
 
     const allPlaceholders = document.querySelectorAll<HTMLElement>(
       '[dev-target="location-item-placeholder"]'
@@ -217,7 +217,7 @@ export class MapController {
     const totalCount = this.allData.length;
 
     if (this.resultsText) {
-      this.resultsText.innerHTML = `<strong>Showing ${totalCount} Results Near You</strong>`;
+      this.resultsText.innerHTML = `<strong>${totalCount}</strong>`;
     }
 
     if (this.prevBtn) {
