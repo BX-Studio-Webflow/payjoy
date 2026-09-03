@@ -5,6 +5,8 @@
  *   [dev-target="department-group"] — department section template
  *   [dev-target="career-item"]      — individual job row template
  *   [dev-target="career-list"]      — container for job rows within a department
+ *   [dev-target="career-role"]      — job title in a career item
+ *   [dev-target="career-city"]      — location in a career item
  */
 
 const API_ENDPOINT = 'https://api.lever.co/v0/postings/payjoy?mode=json&group=department';
@@ -149,17 +151,19 @@ export class CareersController {
         const item = this.careerItemTemplate!.cloneNode(true) as HTMLElement;
         item.removeAttribute('dev-target');
 
-        const roleEl = item.querySelector(
-          '.career_role .u-text, .u-text-wrapper:first-child .u-text'
-        );
-        if (roleEl) roleEl.textContent = posting.text;
+        const roleEl = item.querySelector('[dev-target="career-role"]');
+        if (roleEl) {
+          roleEl.innerHTML = `<strong>${posting.text}</strong>`;
+        } else {
+          console.error('career role not found');
+        }
 
-        const cityEl = item.querySelector(
-          '.career_city .u-text, .carrer-item-content .u-text-wrapper .u-text'
-        );
+        const cityEl = item.querySelector('[dev-target="career-city"]');
         if (cityEl) {
           cityEl.textContent =
             posting.categories.allLocations?.join(', ') ?? posting.categories.location ?? '';
+        } else {
+          console.error('career city not found');
         }
 
         const btn = item.querySelector('.clickable_btn');
