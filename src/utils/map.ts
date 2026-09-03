@@ -7,6 +7,8 @@
  *   [dev-target="result-list-wrap"]             — sidebar results list
  *   [dev-target="prev"] / [dev-target="next"]   — pagination controls
  *   [dev-target="location-item-placeholder"]    — list item template
+ *   [dev-target="store-name"]                   — store name in a list item
+ *   [dev-target="store-address"]                — store address in a list item
  *   [dev-default-lat] / [dev-default-lng]       — default map center on map element
  */
 
@@ -87,15 +89,33 @@ export class MapController {
       console.error('search input not found');
       return;
     }
-    if (!this.resultList || !this.locationItemTemplate) {
-      console.error('result list or location item template not found');
+    if (!this.resultList) {
+      console.error('result list not found');
       return;
     }
+    if (!this.locationItemTemplate) {
+      console.error('location item template not found');
+      return;
+    }
+    if (!this.prevBtn) {
+      console.error('prev button not found');
+    }
+    if (!this.nextBtn) {
+      console.error('next button not found');
+    }
+    if (!this.resultsText) {
+      console.error('results text not found');
+    }
 
-    document.querySelector("form[data-name='Email Form']")?.addEventListener('submit', (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-    });
+    const searchForm = document.querySelector("form[data-name='Email Form']");
+    if (!searchForm) {
+      console.error('search form not found');
+    } else {
+      searchForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+      });
+    }
 
     this.prevBtn?.addEventListener('click', () => {
       if (this.currentPage > 0) {
@@ -222,13 +242,19 @@ export class MapController {
 
     if (this.prevBtn) {
       const wrap = this.prevBtn.closest('.button-main-wrap');
-      if (wrap instanceof HTMLElement) wrap.style.opacity = this.currentPage === 0 ? '0.4' : '1';
+      if (wrap instanceof HTMLElement) {
+        wrap.style.opacity = this.currentPage === 0 ? '0.4' : '1';
+      } else {
+        console.error('prev button wrap not found');
+      }
     }
 
     if (this.nextBtn) {
       const wrap = this.nextBtn.closest('.button-main-wrap');
       if (wrap instanceof HTMLElement) {
         wrap.style.opacity = (this.currentPage + 1) * PAGE_SIZE >= totalCount ? '0.4' : '1';
+      } else {
+        console.error('next button wrap not found');
       }
     }
 
@@ -253,11 +279,19 @@ export class MapController {
       const el = this.locationItemTemplate!.cloneNode(true) as HTMLElement;
       el.removeAttribute('dev-target');
 
-      const nameEl = el.querySelector('.list_item_title .u-text');
-      if (nameEl) nameEl.innerHTML = `<strong>${item.merchantName}</strong>`;
+      const nameEl = el.querySelector('[dev-target="store-name"]');
+      if (nameEl) {
+        nameEl.innerHTML = `<strong>${item.merchantName}</strong>`;
+      } else {
+        console.error('store name not found');
+      }
 
-      const addrEl = el.querySelector('.list_item_address .u-text');
-      if (addrEl) addrEl.textContent = item.address;
+      const addrEl = el.querySelector('[dev-target="store-address"]');
+      if (addrEl) {
+        addrEl.textContent = item.address;
+      } else {
+        console.error('store address not found');
+      }
 
       const linkEl = el.querySelector('[dev-target="link"]');
       if (linkEl instanceof HTMLElement) {
@@ -267,6 +301,8 @@ export class MapController {
           this.map?.setZoom(15);
           this.markerClickHandlers[index]?.();
         });
+      } else {
+        console.error('list item link not found');
       }
 
       this.resultList!.appendChild(el);
@@ -290,14 +326,33 @@ export class MapController {
       const infoContent = infoTemplate.cloneNode(true) as HTMLDivElement;
       infoContent.style.display = 'block';
 
-      infoContent.querySelector('[data-info="name"]')!.textContent = merchantName;
-      infoContent.querySelector('[data-info="address"]')!.textContent = address;
-      infoContent.querySelector('[data-info="number"]')!.textContent = merchantPhone ?? '';
+      const nameInfo = infoContent.querySelector('[data-info="name"]');
+      if (nameInfo) {
+        nameInfo.textContent = merchantName;
+      } else {
+        console.error('info name element not found');
+      }
+
+      const addressInfo = infoContent.querySelector('[data-info="address"]');
+      if (addressInfo) {
+        addressInfo.textContent = address;
+      } else {
+        console.error('info address element not found');
+      }
+
+      const numberInfo = infoContent.querySelector('[data-info="number"]');
+      if (numberInfo) {
+        numberInfo.textContent = merchantPhone ?? '';
+      } else {
+        console.error('info number element not found');
+      }
 
       const dirLink = infoContent.querySelector('[data-info="directions"]');
       if (dirLink instanceof HTMLAnchorElement) {
         dirLink.href = `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`;
         dirLink.target = '_blank';
+      } else {
+        console.error('info directions link not found');
       }
 
       const infoWindow = new google.maps.InfoWindow({ content: infoContent });
