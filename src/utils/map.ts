@@ -9,7 +9,11 @@
  *   [dev-target="location-item-placeholder"]    — list item template
  *   [dev-target="store-name"]                   — store name in a list item
  *   [dev-target="store-address"]                — store address in a list item
- *   [dev-default-lat] / [dev-default-lng]       — default map center on map element
+ *   [dev-default-lat] / [dev-default-lng]       — deprecated: shared across all
+ *                                                  locales, no longer read; the
+ *                                                  fallback center is derived from
+ *                                                  the URL locale segment instead
+ *                                                  (e.g. /pe/... -> "pe")
  */
 
 const API_URL = 'https://payjoy.com/partner-stores.php';
@@ -17,6 +21,20 @@ const PAGE_SIZE = 20;
 const MAP_ID = '42d7ecf33b86758d';
 const MARKER_ICON =
   'https://cdn.prod.website-files.com/674450e27e5d54e8286f6929/678654cc3c2c67711f9e8591_Map%20Marker.svg';
+
+// keyed by the locale path segment used across the site, e.g. payjoy.com/pe/...
+const DEFAULT_COORDS_BY_COUNTRY: Record<string, LatLngCoords> = {
+  mx: { lat: 19.2464696, lng: -99.1013498 },
+  pe: { lat: -12.0463731, lng: -77.0427934 },
+  co: { lat: 4.7109886, lng: -74.072092 },
+  br: { lat: -23.5505199, lng: -46.6333094 },
+  pa: { lat: 8.9824269, lng: -79.5199115 },
+  ec: { lat: -0.1806532, lng: -78.4678382 },
+  za: { lat: -26.2041028, lng: 28.0473051 },
+  ph: { lat: 14.5995124, lng: 120.9842195 },
+  id: { lat: -6.2087634, lng: 106.845599 },
+};
+const DEFAULT_COUNTRY = 'mx';
 
 interface StoreLocation {
   lat: string;
@@ -52,14 +70,17 @@ export class MapController {
   private locationItemTemplate: HTMLElement | null = null;
   private infoTemplate: HTMLDivElement | null = null;
 
-  private defaultLat = 19.2464696;
-  private defaultLng = -99.1013498;
+  private defaultLat = DEFAULT_COORDS_BY_COUNTRY[DEFAULT_COUNTRY].lat;
+  private defaultLng = DEFAULT_COORDS_BY_COUNTRY[DEFAULT_COUNTRY].lng;
+  private countryCode = DEFAULT_COUNTRY;
 
   init(): void {
     if (new URL(window.location.href).searchParams.has('debug')) {
       console.error('Debug Mode');
       return;
     }
+
+    this.countryCode = this.getCountryCodeFromUrl();
 
     this.mapElement = document.querySelector('[dev-target="map"]');
     this.searchInput = document.querySelector('[dev-target="search"]');
@@ -78,8 +99,12 @@ export class MapController {
 
     this.infoTemplate = this.createInfoTemplate();
 
-    this.defaultLat = Number(this.mapElement?.getAttribute('dev-default-lat') ?? this.defaultLat);
-    this.defaultLng = Number(this.mapElement?.getAttribute('dev-default-lng') ?? this.defaultLng);
+    // dev-default-lat/lng live on a shared Webflow symbol synced across every
+    // locale page, so they're always Mexico's coordinates — the URL-derived
+    // country is the only reliable source for the per-locale fallback center.
+    const countryDefaults = DEFAULT_COORDS_BY_COUNTRY[this.countryCode];
+    this.defaultLat = countryDefaults.lat;
+    this.defaultLng = countryDefaults.lng;
 
     if (!this.mapElement) {
       console.error('map element not found');
@@ -216,17 +241,24 @@ export class MapController {
     this.renderPage(true);
   }
 
+  private getCountryCodeFromUrl(): string {
+    const [firstSegment] = window.location.pathname.split('/').filter(Boolean);
+    const candidate = firstSegment?.toLowerCase();
+    return candidate && candidate in DEFAULT_COORDS_BY_COUNTRY ? candidate : DEFAULT_COUNTRY;
+  }
+
   private async fetchData({ lat, lng }: LatLngCoords): Promise<StoreLocation[]> {
     this.apiUrl.searchParams.set('category', 'stores-near-me');
     this.apiUrl.searchParams.set('limit', '20');
     this.apiUrl.searchParams.set('lat', lat.toString());
     this.apiUrl.searchParams.set('lng', lng.toString());
+    this.apiUrl.searchParams.set('country', this.countryCode);
 
     const res = await fetch(this.apiUrl);
     const data = (await res.json()) as StoreLocation[];
 
     // eslint-disable-next-line no-console -- debug: locations returned from API
-    console.log(`[PayJoy Map] Found ${data.length} locations near (${lat}, ${lng}):`, data);
+    console.log(`[PayJoy Map] ${this.countryCode} Found ${data.length} locations near (${lat}, ${lng}):`, data);
 
     return data;
   }
